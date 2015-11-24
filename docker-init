@@ -1,0 +1,31 @@
+rpm -ivh https://yum.puppetlabs.com/el/7/products/x86_64/puppetlabs-release-7-11.noarch.rpm
+yum install -y puppet
+
+puppet module install garethr-docker
+
+cat << 'EOF' >> /tmp/init.pp
+include 'docker'
+
+::docker::image { 'nginx': }
+
+::docker::run { 'nginx-1':
+  image   => 'nginx',
+	ports   => ['9000:80'],
+  volumes => '/var/www/nginx-1:/usr/share/nginx/html:ro'
+}
+
+file { '/var/www':
+  ensure => directory,
+}
+
+file { '/var/www/nginx-1':
+  ensure => directory,
+}
+
+file { '/var/www/nginx-1/index.html':
+  ensure  => present,
+	content => "<h1>Welcome on ${::hostname}</h1>",
+}
+EOF
+
+puppet apply /tmp/init.pp  2>&1
